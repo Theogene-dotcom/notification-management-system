@@ -1,0 +1,117 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto px-4 py-8">
+    <div class="flex justify-between items-center mb-6">
+        <h1 class="text-2xl font-bold text-gray-800">Notifications</h1>
+        <button id="mark-all-read" class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition">
+            Mark All as Read
+        </button>
+    </div>
+
+    <div class="bg-white shadow rounded-lg overflow-hidden">
+        {% for notification in notifications %}
+        <div class="border-b border-gray-200 last:border-b-0 {% if not notification.is_read %}bg-blue-50{% endif %}">
+            <div class="p-4 flex justify-between items-start">
+                <div>
+                    <div class="flex items-center space-x-2">
+                        <h3 class="font-semibold text-gray-800">{{ notification.title }}</h3>
+                        {% if not notification.is_read %}
+                        <span class="inline-block h-2 w-2 rounded-full bg-blue-600"></span>
+                        {% endif %}
+                    </div>
+                    <p class="text-gray-600 mt-1">{{ notification.message }}</p>
+                    <div class="mt-2 flex items-center text-sm text-gray-500">
+                        <span>{{ notification.created_at|timesince }} ago</span>
+                        {% if notification.url %}
+                        <span class="mx-2">•</span>
+                        <a href="{{ notification.url }}" class="text-blue-600 hover:underline">View</a>
+                        {% endif %}
+                    </div>
+                </div>
+                <div class="flex space-x-2">
+                    {% if not notification.is_read %}
+                    <button data-notification-id="{{ notification.id }}" 
+                            class="mark-as-read px-2 py-1 text-xs bg-green-100 text-green-800 rounded hover:bg-green-200 transition">
+                        Mark as Read
+                    </button>
+                    {% endif %}
+                    <button data-notification-id="{{ notification.id }}" 
+                            class="delete-notification px-2 py-1 text-xs bg-red-100 text-red-800 rounded hover:bg-red-200 transition">
+                        Delete
+                    </button>
+                </div>
+            </div>
+        </div>
+        {% empty %}
+        <div class="p-8 text-center text-gray-500">
+            You have no notifications.
+        </div>
+        {% endfor %}
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Mark as read buttons
+    document.querySelectorAll('.mark-as-read').forEach(button => {
+        button.addEventListener('click', function() {
+            const notificationId = this.getAttribute('data-notification-id');
+            fetch(`/notifications/mark-as-read/${notificationId}/`, {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': '{{ csrf_token }}',
+                    'Content-Type': 'application/json'
+                },
+                credentials: 'same-origin'
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    location.reload();
+                }
+            });
+        });
+    });
+
+    // Delete buttons
+    document.querySelectorAll('.delete-notification').forEach(button => {
+        button.addEventListener('click', function() {
+            const notificationId = this.getAttribute('data-notification-id');
+            fetch(`/notifications/delete/${notificationId}/`, {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': '{{ csrf_token }}',
+                    'Content-Type': 'application/json'
+                },
+                credentials: 'same-origin'
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    location.reload();
+                }
+            });
+        });
+    });
+
+    // Mark all as read
+    document.getElementById('mark-all-read').addEventListener('click', function() {
+        fetch('/notifications/mark-all-as-read/', {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': '{{ csrf_token }}',
+                'Content-Type': 'application/json'
+            },
+            credentials: 'same-origin'
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.status === 'success') {
+                location.reload();
+            }
+        });
+    });
+});
+</script>
+{% endblock %}
